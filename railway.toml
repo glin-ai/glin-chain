@@ -3,24 +3,11 @@ builder = "DOCKERFILE"
 dockerfilePath = "./Dockerfile"
 
 [deploy]
-startCommand = "glin-node --chain testnet --validator --name railway-validator-${RAILWAY_REPLICA_ID} --rpc-external --rpc-cors all --prometheus-external"
-healthcheckPath = "/health"
-healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
-[[services]]
-name = "glin-validator-1"
-numReplicas = 1
-
-[services.env]
+# Environment variables for Railway deployment
+# These will be overridden per service in Railway dashboard
+[env]
 RUST_LOG = "info"
-NODE_TYPE = "validator"
-
-[[services]]
-name = "glin-rpc"
-numReplicas = 1
-
-[services.env]
-NODE_TYPE = "rpc"
-RUST_LOG = "info"
+CHAIN = "dev"

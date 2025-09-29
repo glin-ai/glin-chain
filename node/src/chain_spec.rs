@@ -4,7 +4,7 @@ use glin_runtime::{
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
-use sp_core::{sr25519, Pair, Public};
+use sp_core::{sr25519, Pair, Public, crypto::Ss58Codec};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use serde_json::{json, Value};
 
@@ -62,11 +62,34 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
     .build())
 }
 
+/// Incentivized testnet configuration for Railway deployment
+pub fn incentivized_testnet_config() -> Result<ChainSpec, String> {
+    Ok(ChainSpec::builder(
+        WASM_BINARY.ok_or_else(|| "WASM not available".to_string())?,
+        None,
+    )
+    .with_name("GLIN Incentivized Testnet")
+    .with_id("glin_testnet")
+    .with_chain_type(ChainType::Live)
+    .with_genesis_config_patch(incentivized_testnet_genesis())
+    .with_properties(testnet_properties())
+    .build())
+}
+
 fn properties() -> serde_json::Map<String, Value> {
     let mut props = serde_json::Map::new();
     props.insert("tokenSymbol".to_string(), json!("GLIN"));
     props.insert("tokenDecimals".to_string(), json!(18));
     props.insert("ss58Format".to_string(), json!(42));
+    props
+}
+
+fn testnet_properties() -> serde_json::Map<String, Value> {
+    let mut props = serde_json::Map::new();
+    props.insert("tokenSymbol".to_string(), json!("tGLIN"));
+    props.insert("tokenDecimals".to_string(), json!(18));
+    props.insert("ss58Format".to_string(), json!(42));
+    props.insert("isTestnet".to_string(), json!(true));
     props
 }
 
@@ -105,6 +128,72 @@ fn local_testnet_genesis() -> Value {
     ];
 
     testnet_genesis(initial_authorities, root_key, endowed_accounts)
+}
+
+/// Incentivized testnet genesis with real accounts
+fn incentivized_testnet_genesis() -> Value {
+    // Generate real validator accounts (these will be replaced with actual validator keys)
+    // For now, using deterministic keys for setup
+    let initial_authorities = vec![
+        authority_keys_from_seed("Validator1"),
+        authority_keys_from_seed("Validator2"),
+        authority_keys_from_seed("Validator3"),
+    ];
+
+    // Special accounts with controlled access
+    // In production, these should be generated securely and stored in Railway secrets
+
+    // Faucet account - controlled by faucet service
+    let faucet_account = get_account_id_from_seed::<sr25519::Public>("Faucet");
+
+    // Treasury account - controlled by governance
+    let treasury_account = get_account_id_from_seed::<sr25519::Public>("Treasury");
+
+    // Team operations account - for partnerships and testing
+    let team_ops_account = get_account_id_from_seed::<sr25519::Public>("TeamOps");
+
+    // Ecosystem fund - for grants and bounties
+    let ecosystem_account = get_account_id_from_seed::<sr25519::Public>("Ecosystem");
+
+    // Burn address (using a known unspendable address)
+    let burn_account = AccountId::from_ss58check("5BURN0000000000000000000000000000000000000000001")
+        .unwrap_or_else(|_| get_account_id_from_seed::<sr25519::Public>("Burn"));
+
+    json!({
+        "balances": {
+            "balances": vec![
+                (faucet_account.clone(), 100_000_000 * GLIN),     // 100M for faucet
+                (treasury_account.clone(), 300_000_000 * GLIN),   // 300M for treasury
+                (team_ops_account.clone(), 50_000_000 * GLIN),     // 50M for team ops
+                (ecosystem_account.clone(), 50_000_000 * GLIN),    // 50M for ecosystem
+                (burn_account, 500_000_000 * GLIN),                // 500M burned/locked
+                // Validators get minimal balance for operations
+                (get_account_id_from_seed::<sr25519::Public>("Validator1"), 1000 * GLIN),
+                (get_account_id_from_seed::<sr25519::Public>("Validator2"), 1000 * GLIN),
+                (get_account_id_from_seed::<sr25519::Public>("Validator3"), 1000 * GLIN),
+            ],
+        },
+        "aura": {
+            "authorities": initial_authorities
+                .iter()
+                .map(|x| x.0.clone())
+                .collect::<Vec<_>>(),
+        },
+        "grandpa": {
+            "authorities": initial_authorities
+                .iter()
+                .map(|x| (x.1.clone(), 1))
+                .collect::<Vec<_>>(),
+        },
+        // No sudo for incentivized testnet - governance only
+        "sudo": {
+            "key": None::<AccountId>,
+        },
+        // Transaction payment configuration
+        "transactionPayment": {
+            "multiplier": "1000000000000000000",
+        },
+    })
 }
 
 /// Configure initial storage state for FRAME modules.

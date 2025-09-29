@@ -28,6 +28,10 @@ chains/
 *.seed
 .env
 .env.*
+validator-keys/
+*_account.json
+*_keys.json
+railway_env_*.txt
 
 # Logs
 *.log
