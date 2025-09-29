@@ -45,6 +45,9 @@ RUN apt-get update && apt-get install -y \
 # Copy binary from builder
 COPY --from=builder /app/target/release/glin-node /usr/local/bin/glin-node
 
+# Copy chain specification
+COPY chain-specs/glin-testnet-raw.json /chain-specs/glin-testnet-raw.json
+
 # Create non-root user for security
 RUN useradd -m -u 1000 -U -s /bin/sh -d /glin glin && \
     mkdir -p /data /glin/.local/share && \
@@ -63,5 +66,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
     CMD ["/usr/local/bin/glin-node", "--version"]
 
 ENTRYPOINT ["/usr/local/bin/glin-node"]
-# Default command for development - Railway will override this
-CMD ["--dev", "--ws-external", "--rpc-external", "--rpc-cors", "all"]
+# Default command for testnet - Railway will override this
+CMD ["--chain", "/chain-specs/glin-testnet-raw.json", "--ws-external", "--rpc-external", "--rpc-cors", "all"]

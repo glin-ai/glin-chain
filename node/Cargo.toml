@@ -19,6 +19,7 @@ futures = { version = "0.3", features = ["thread-pool"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 jsonrpsee = { version = "0.24", features = ["server"] }
+hex = "0.4"
 
 # Substrate client
 sc-cli = { version = "0.47.0" }

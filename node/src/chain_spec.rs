@@ -4,7 +4,7 @@ use glin_runtime::{
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
-use sp_core::{sr25519, Pair, Public, crypto::Ss58Codec};
+use sp_core::{sr25519, ed25519, Pair, Public, crypto::Ss58Codec, ByteArray};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use serde_json::{json, Value};
 
@@ -132,28 +132,49 @@ fn local_testnet_genesis() -> Value {
 
 /// Incentivized testnet genesis with real accounts
 fn incentivized_testnet_genesis() -> Value {
-    // Generate real validator accounts (these will be replaced with actual validator keys)
-    // For now, using deterministic keys for setup
-    let initial_authorities = vec![
-        authority_keys_from_seed("Validator1"),
-        authority_keys_from_seed("Validator2"),
-        authority_keys_from_seed("Validator3"),
+    // Using the actual generated validator public keys
+    // Private keys will be inserted via RPC after node startup
+    let initial_authorities: Vec<(AuraId, GrandpaId)> = vec![
+        (
+            // Validator 1
+            AuraId::from_slice(&hex::decode("b4bbc6fb7d021444523daf2c5b429d4e234ba810a8bf3d3ca4482e9ed76a787e").expect("Valid hex"))
+                .expect("Valid Aura key"),
+            GrandpaId::from_slice(&hex::decode("63be21044cc774e87021a0a0481e3478d8f5d5dba0df38341656445959734e75").expect("Valid hex"))
+                .expect("Valid GRANDPA key"),
+        ),
+        (
+            // Validator 2
+            AuraId::from_slice(&hex::decode("e6ccca3c9b1fb4454ff8632ec22200192e0c185d0f35e2b996eba2b3d3807244").expect("Valid hex"))
+                .expect("Valid Aura key"),
+            GrandpaId::from_slice(&hex::decode("203d88aec03894cf4e2bac89173727363f07c7363b1dead1261e87eef2088b22").expect("Valid hex"))
+                .expect("Valid GRANDPA key"),
+        ),
+        (
+            // Validator 3
+            AuraId::from_slice(&hex::decode("e817436ddda78a99e5a1aa2bc2c5aeb276aed241ba0078d2dceac6d843f35167").expect("Valid hex"))
+                .expect("Valid Aura key"),
+            GrandpaId::from_slice(&hex::decode("89782419d12adb3877aa248dd89bf769836fd528d707d783aed9e312ece4d0bb").expect("Valid hex"))
+                .expect("Valid GRANDPA key"),
+        ),
     ];
 
-    // Special accounts with controlled access
-    // In production, these should be generated securely and stored in Railway secrets
+    // Special accounts with controlled access - using real generated addresses
 
     // Faucet account - controlled by faucet service
-    let faucet_account = get_account_id_from_seed::<sr25519::Public>("Faucet");
+    let faucet_account = AccountId::from_ss58check("5FHNa6qqbh3rD4uUD3nkdiCvwJgn8dzT7ViTpyWrSAjPJNrr")
+        .expect("Valid faucet address");
 
     // Treasury account - controlled by governance
-    let treasury_account = get_account_id_from_seed::<sr25519::Public>("Treasury");
+    let treasury_account = AccountId::from_ss58check("5EvHDz1hSYKpp4xg5nr8ZnWDbiT1aMqAMUJb7f6PxzwEf7L5")
+        .expect("Valid treasury address");
 
     // Team operations account - for partnerships and testing
-    let team_ops_account = get_account_id_from_seed::<sr25519::Public>("TeamOps");
+    let team_ops_account = AccountId::from_ss58check("5EfN47pArrgnHQMpHYenFBjFvHPnhoptzi2xLdX8y2aKyUHa")
+        .expect("Valid team ops address");
 
     // Ecosystem fund - for grants and bounties
-    let ecosystem_account = get_account_id_from_seed::<sr25519::Public>("Ecosystem");
+    let ecosystem_account = AccountId::from_ss58check("5CJs5wCYsEy5ne1YGXWJoVgFrkfhRydG2neWUFnVEwZrXEyi")
+        .expect("Valid ecosystem address");
 
     // Burn address (using a known unspendable address)
     let burn_account = AccountId::from_ss58check("5BURN0000000000000000000000000000000000000000001")
@@ -167,10 +188,10 @@ fn incentivized_testnet_genesis() -> Value {
                 (team_ops_account.clone(), 50_000_000 * GLIN),     // 50M for team ops
                 (ecosystem_account.clone(), 50_000_000 * GLIN),    // 50M for ecosystem
                 (burn_account, 500_000_000 * GLIN),                // 500M burned/locked
-                // Validators get minimal balance for operations
-                (get_account_id_from_seed::<sr25519::Public>("Validator1"), 1000 * GLIN),
-                (get_account_id_from_seed::<sr25519::Public>("Validator2"), 1000 * GLIN),
-                (get_account_id_from_seed::<sr25519::Public>("Validator3"), 1000 * GLIN),
+                // Validators get minimal balance for operations (using their actual addresses)
+                (AccountId::from_ss58check("5G9gFursQMBi1taQxi7BHLDY6rGcgNTtJxJZf1MM24UQuPch").expect("Valid validator 1 address"), 1000 * GLIN),
+                (AccountId::from_ss58check("5HHKhuA1RBZQi4e3GHCX2uHh5qop22ERk4B8eyx8qZaPAMoh").expect("Valid validator 2 address"), 1000 * GLIN),
+                (AccountId::from_ss58check("5HK1spmDFQm5kNwQW1iVieT9osdryiQHfDyddWn8ECdfyxD9").expect("Valid validator 3 address"), 1000 * GLIN),
             ],
         },
         "aura": {
