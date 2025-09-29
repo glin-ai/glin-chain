@@ -1,0 +1,46 @@
+[package]
+name = "pallet-task-registry"
+version = "0.1.0"
+authors = ["GLIN Team"]
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "3.6", default-features = false, features = ["derive"] }
+scale-info = { version = "2.10", default-features = false, features = ["derive"] }
+frame-support = { version = "28.0.0", default-features = false }
+frame-system = { version = "28.0.0", default-features = false }
+frame-benchmarking = { version = "28.0.0", default-features = false, optional = true }
+sp-runtime = { version = "31.0.0", default-features = false }
+sp-std = { version = "14.0.0", default-features = false }
+sp-io = { version = "30.0.0", default-features = false }
+pallet-balances = { version = "28.0.0", default-features = false }
+
+[dev-dependencies]
+sp-core = { version = "28.0.0" }
+sp-runtime = { version = "31.0.0" }
+pallet-balances = { version = "28.0.0" }
+
+[features]
+default = ["std"]
+std = [
+    "codec/std",
+    "scale-info/std",
+    "frame-support/std",
+    "frame-system/std",
+    "frame-benchmarking/std",
+    "sp-runtime/std",
+    "sp-std/std",
+    "sp-io/std",
+    "pallet-balances/std",
+]
+runtime-benchmarks = [
+    "frame-benchmarking/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
+    "frame-system/runtime-benchmarks",
+]
+try-runtime = [
+    "frame-support/try-runtime",
+    "frame-system/try-runtime",
+]

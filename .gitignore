@@ -1,0 +1,72 @@
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+/target
+/node/target
+/runtime/target
+/pallets/*/target
+
+# Chain data
+.local/
+data/
+chains/
+
+# Keys and secrets
+*.key
+*.seed
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+cobertura.xml
+coverage/
+*.profraw
+*.profdata
+
+# Documentation
+/target/doc
+/target/criterion
+
+# Benchmarking
+/benchmarks/
+
+# Node modules (if using JS tools)
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.directory
+.Trash-*
