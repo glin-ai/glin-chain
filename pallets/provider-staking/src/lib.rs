@@ -1,15 +1,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::{
-    dispatch::{DispatchError, DispatchResult},
+    dispatch::DispatchResult,
     pallet_prelude::*,
-    traits::{Currency, ReservableCurrency},
+    traits::{Currency, ReservableCurrency, Imbalance},
+    BoundedVec,
 };
 use frame_system::pallet_prelude::*;
-use scale_info::prelude::vec::Vec;
 use sp_runtime::{
     traits::{Saturating, Zero},
-    Percent, Permill,
+    Percent, DispatchError,
 };
 
 pub use pallet::*;
@@ -47,7 +47,7 @@ pub mod pallet {
         type UnstakingPeriod: Get<BlockNumberFor<Self>>;
     }
 
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum ProviderStatus {
         Active,
         Idle,
@@ -57,14 +57,14 @@ pub mod pallet {
         Unbonding,
     }
 
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum GpuTier {
         Consumer,  // RTX 3070, 3080, etc.
         Prosumer,  // RTX 4080, 4090
         Professional, // A100, H100
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo)]
+    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct Provider<T: Config> {
         pub stake: BalanceOf<T>,
@@ -79,9 +79,9 @@ pub mod pallet {
         pub unbonding_at: Option<BlockNumberFor<T>>,
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, Default)]
+    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, Default, PartialEq, MaxEncodedLen)]
     pub struct HardwareInfo {
-        pub gpu_model: Vec<u8>,
+        pub gpu_model: BoundedVec<u8, ConstU32<100>>,
         pub gpu_tier: GpuTier,
         pub vram_gb: u32,
         pub compute_capability: u32, // Stored as u32, divide by 10 for float
@@ -96,7 +96,7 @@ pub mod pallet {
         }
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo)]
+    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, PartialEq, MaxEncodedLen)]
     pub enum SlashReason {
         MaliciousGradient,
         FalseHardwareClaim,
@@ -215,16 +215,28 @@ pub mod pallet {
             ensure!(!Providers::<T>::contains_key(&provider), Error::<T>::ProviderAlreadyRegistered);
             ensure!(ProviderCount::<T>::get() < T::MaxProviders::get(), Error::<T>::TooManyProviders);
             ensure!(hardware_info.vram_gb > 0, Error::<T>::InvalidHardwareSpec);
-            ensure!(hardware_info.gpu_model.len() <= 100, Error::<T>::InvalidGpuModel);
+            // GPU model validation is handled by BoundedVec
 
             // Reserve the stake
             T::Currency::reserve(&provider, stake_amount)?;
+
+            // Validate GPU model length
+            let gpu_model_bounded = hardware_info.gpu_model.try_into().map_err(|_| Error::<T>::InvalidGpuModel)?;
+            let hardware_info_bounded = HardwareInfo {
+                gpu_model: gpu_model_bounded,
+                gpu_tier: hardware_info.gpu_tier,
+                vram_gb: hardware_info.vram_gb,
+                compute_capability: hardware_info.compute_capability,
+                bandwidth_mbps: hardware_info.bandwidth_mbps,
+                cpu_cores: hardware_info.cpu_cores,
+                ram_gb: hardware_info.ram_gb,
+            };
 
             // Create provider entry
             let provider_info = Provider {
                 stake: stake_amount,
                 status: ProviderStatus::Active,
-                hardware_info,
+                hardware_info: hardware_info_bounded,
                 reputation_score: 500, // Start with neutral reputation
                 total_tasks_completed: 0,
                 total_gradients_computed: 0,
@@ -260,11 +272,22 @@ pub mod pallet {
                 let provider_info = maybe_provider.as_mut().ok_or(Error::<T>::ProviderNotFound)?;
 
                 ensure!(hardware_info.vram_gb > 0, Error::<T>::InvalidHardwareSpec);
-                ensure!(hardware_info.gpu_model.len() <= 100, Error::<T>::InvalidGpuModel);
 
-                provider_info.hardware_info = hardware_info;
+                // Validate GPU model length
+                let gpu_model_bounded = hardware_info.gpu_model.try_into().map_err(|_| Error::<T>::InvalidGpuModel)?;
+                let hardware_info_bounded = HardwareInfo {
+                    gpu_model: gpu_model_bounded,
+                    gpu_tier: hardware_info.gpu_tier,
+                    vram_gb: hardware_info.vram_gb,
+                    compute_capability: hardware_info.compute_capability,
+                    bandwidth_mbps: hardware_info.bandwidth_mbps,
+                    cpu_cores: hardware_info.cpu_cores,
+                    ram_gb: hardware_info.ram_gb,
+                };
 
-                Ok(())
+                provider_info.hardware_info = hardware_info_bounded;
+
+                Ok::<(), DispatchError>(())
             })?;
 
             Self::deposit_event(Event::HardwareUpdated { provider });
@@ -291,7 +314,7 @@ pub mod pallet {
                 provider_info.status = ProviderStatus::Unbonding;
                 provider_info.unbonding_at = Some(unbonding_at);
 
-                Ok(unbonding_at)
+                Ok::<_, DispatchError>(unbonding_at)
             }).map(|unbonding_at| {
                 Self::deposit_event(Event::UnbondingStarted {
                     provider,
@@ -352,7 +375,8 @@ pub mod pallet {
                 let remaining = provider_info.stake.saturating_sub(slash_amount);
 
                 // Slash from reserved balance
-                let actual_slash = T::Currency::slash_reserved(&provider, slash_amount).0;
+                let (actual_slash, _) = T::Currency::slash_reserved(&provider, slash_amount);
+                let actual_slash_amount = actual_slash.peek();
 
                 provider_info.stake = remaining;
 
@@ -366,9 +390,9 @@ pub mod pallet {
 
                 // Record slash
                 let block = frame_system::Pallet::<T>::block_number();
-                SlashHistory::<T>::insert(&provider, block, (reason.clone(), actual_slash));
+                SlashHistory::<T>::insert(&provider, block, (reason.clone(), actual_slash_amount));
 
-                Ok(actual_slash)
+                Ok::<_, DispatchError>(actual_slash_amount)
             }).map(|slash_amount| {
                 Self::deposit_event(Event::ProviderSlashed {
                     provider,
@@ -402,7 +426,7 @@ pub mod pallet {
                     provider_info.status = ProviderStatus::Suspended;
                 }
 
-                Ok(())
+                Ok::<(), DispatchError>(())
             })?;
 
             Self::deposit_event(Event::ReputationUpdated {
@@ -429,7 +453,7 @@ pub mod pallet {
                 provider_info.status = new_status.clone();
                 provider_info.last_active = frame_system::Pallet::<T>::block_number();
 
-                Ok(())
+                Ok::<(), DispatchError>(())
             })?;
 
             Self::deposit_event(Event::StatusChanged {

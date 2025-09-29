@@ -1,14 +1,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::{
-    dispatch::{DispatchError, DispatchResult},
+    dispatch::DispatchResult,
     pallet_prelude::*,
-    traits::{Currency, ReservableCurrency},
-    PalletId,
+    traits::{Currency, ReservableCurrency, ExistenceRequirement},
+    PalletId, BoundedVec,
 };
 use frame_system::pallet_prelude::*;
 use scale_info::prelude::vec::Vec;
-use sp_runtime::traits::{AccountIdConversion, Saturating};
+use sp_runtime::{traits::{AccountIdConversion, Hash}, DispatchError};
 
 pub use pallet::*;
 
@@ -41,7 +41,7 @@ pub mod pallet {
         type PalletId: Get<PalletId>;
     }
 
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum TaskStatus {
         Pending,
         Recruiting,
@@ -52,7 +52,7 @@ pub mod pallet {
         Cancelled,
     }
 
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum ModelType {
         ResNet,
         Bert,
@@ -61,11 +61,11 @@ pub mod pallet {
         LoraFineTune,
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo)]
+    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct Task<T: Config> {
         pub creator: T::AccountId,
-        pub name: Vec<u8>,
+        pub name: BoundedVec<u8, ConstU32<255>>,
         pub model_type: ModelType,
         pub bounty: BalanceOf<T>,
         pub min_providers: u32,
@@ -73,11 +73,11 @@ pub mod pallet {
         pub status: TaskStatus,
         pub created_at: BlockNumberFor<T>,
         pub completed_at: Option<BlockNumberFor<T>>,
-        pub ipfs_hash: Vec<u8>, // Model/dataset IPFS hash
+        pub ipfs_hash: BoundedVec<u8, ConstU32<64>>, // Model/dataset IPFS hash
         pub hardware_requirements: HardwareRequirements,
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, Default)]
+    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, Default, PartialEq, MaxEncodedLen)]
     pub struct HardwareRequirements {
         pub min_vram_gb: u32,
         pub min_compute_capability: u32, // Stored as u32, divide by 10 for float
@@ -190,8 +190,7 @@ pub mod pallet {
 
             // Validate inputs
             ensure!(bounty >= T::MinimumBounty::get(), Error::<T>::BountyTooLow);
-            ensure!(name.len() <= 255, Error::<T>::NameTooLong);
-            ensure!(ipfs_hash.len() <= 64, Error::<T>::IpfsHashTooLong);
+            // Length validation is handled by BoundedVec
             ensure!(max_providers <= T::MaxProvidersPerTask::get(), Error::<T>::TooManyProviders);
             ensure!(min_providers > 0 && min_providers <= max_providers,
                 Error::<T>::InvalidHardwareRequirements);
@@ -206,7 +205,7 @@ pub mod pallet {
             // Create task
             let task = Task {
                 creator: creator.clone(),
-                name,
+                name: name.try_into().map_err(|_| Error::<T>::NameTooLong)?,
                 model_type,
                 bounty,
                 min_providers,
@@ -214,7 +213,7 @@ pub mod pallet {
                 status: TaskStatus::Pending,
                 created_at: frame_system::Pallet::<T>::block_number(),
                 completed_at: None,
-                ipfs_hash,
+                ipfs_hash: ipfs_hash.try_into().map_err(|_| Error::<T>::IpfsHashTooLong)?,
                 hardware_requirements,
             };
 
@@ -249,7 +248,7 @@ pub mod pallet {
 
                 task.status = TaskStatus::Recruiting;
 
-                Ok(())
+                Ok::<(), DispatchError>(())
             })?;
 
             Self::deposit_event(Event::TaskStarted { task_id });
@@ -316,7 +315,7 @@ pub mod pallet {
                 T::Currency::unreserve(&task.creator, bounty);
                 T::Currency::transfer(&task.creator, &escrow_account, bounty, ExistenceRequirement::KeepAlive)?;
 
-                Ok(())
+                Ok::<(), DispatchError>(())
             })?;
 
             Self::deposit_event(Event::TaskCompleted { task_id });

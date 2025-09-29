@@ -1,18 +1,18 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::{
-    dispatch::{DispatchError, DispatchResult},
+    dispatch::DispatchResult,
     pallet_prelude::*,
     traits::{Currency, ExistenceRequirement},
     PalletId,
 };
 use frame_system::pallet_prelude::*;
 use scale_info::prelude::vec::Vec;
+use sp_std;
 use sp_runtime::{
-    traits::{AccountIdConversion, Saturating, Zero},
-    Permill,
+    traits::{AccountIdConversion, Saturating, Zero, Hash},
+    Permill, DispatchError,
 };
-use sp_std::collections::btree_map::BTreeMap;
 
 pub use pallet::*;
 
@@ -53,7 +53,7 @@ pub mod pallet {
         type PlatformFeePercentage: Get<Permill>;
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo)]
+    #[derive(Encode, Decode, Clone, TypeInfo, PartialEq, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct RewardBatch<T: Config> {
         pub task_id: T::Hash,
@@ -64,7 +64,7 @@ pub mod pallet {
         pub merkle_root: T::Hash, // For efficient verification
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo)]
+    #[derive(Encode, Decode, Clone, TypeInfo, PartialEq, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct ProviderReward<T: Config> {
         pub provider: T::AccountId,
@@ -74,7 +74,17 @@ pub mod pallet {
         pub hardware_multiplier: u32, // Stored as u32, divide by 100 for decimal
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo)]
+    impl<T: Config> sp_std::fmt::Debug for ProviderReward<T> {
+        fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
+            f.debug_struct("ProviderReward")
+                .field("gradients_contributed", &self.gradients_contributed)
+                .field("quality_score", &self.quality_score)
+                .field("hardware_multiplier", &self.hardware_multiplier)
+                .finish()
+        }
+    }
+
+    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct RewardMetrics {
         pub total_gradients: u64,
         pub avg_quality_score: u32,
@@ -246,7 +256,7 @@ pub mod pallet {
             ensure!(rewards.len() <= T::MaxProvidersPerBatch::get() as usize, Error::<T>::TooManyProviders);
 
             // Calculate total rewards
-            let mut total_rewards = Zero::zero();
+            let mut total_rewards: BalanceOf<T> = Zero::zero();
 
             for reward in rewards.iter() {
                 ensure!(reward.amount >= T::MinimumReward::get(), Error::<T>::InvalidRewardAmount);
@@ -300,17 +310,19 @@ pub mod pallet {
 
                 batch.settled = true;
 
-                Ok(())
+                Ok::<(), DispatchError>(())
             })?;
 
             // Process all rewards in batch
             let mut settled_count = 0u32;
-            let mut total_settled = Zero::zero();
+            let mut total_settled: BalanceOf<T> = Zero::zero();
+            let mut total_fee: BalanceOf<T> = Zero::zero();
 
             for (provider, reward) in BatchRewards::<T>::iter_prefix(&batch_id) {
                 // Calculate platform fee
                 let fee = T::PlatformFeePercentage::get() * reward.amount;
                 let net_reward = reward.amount.saturating_sub(fee);
+                total_fee = total_fee.saturating_add(fee);
 
                 // Transfer from escrow to provider
                 let escrow_account = Self::account_id();
@@ -344,9 +356,9 @@ pub mod pallet {
                 batches_settled: settled_count,
             });
 
-            if !fee.is_zero() {
+            if !total_fee.is_zero() {
                 Self::deposit_event(Event::PlatformFeeCollected {
-                    amount: fee,
+                    amount: total_fee,
                 });
             }
 

@@ -5,8 +5,6 @@ members = [
     "pallets/task-registry",
     "pallets/provider-staking",
     "pallets/reward-distribution",
-    "pallets/validation-zkp",
-    "pallets/reputation",
 ]
 resolver = "2"
 
@@ -19,34 +17,34 @@ version = "0.1.0"
 
 [workspace.dependencies]
 # Substrate dependencies
-codec = { package = "parity-scale-codec", version = "3.6", default-features = false }
-scale-info = { version = "2.10", default-features = false }
-log = { version = "0.4", default-features = false }
+codec = { package = "parity-scale-codec", version = "3.6.12", default-features = false, features = ["derive"] }
+scale-info = { version = "2.11.1", default-features = false, features = ["derive"] }
+log = { version = "0.4.22", default-features = false }
 
 # Substrate FRAME
-frame-support = { version = "28.0.0", default-features = false }
-frame-system = { version = "28.0.0", default-features = false }
-frame-executive = { version = "28.0.0", default-features = false }
-frame-benchmarking = { version = "28.0.0", default-features = false, optional = true }
+frame-support = { version = "38.0.0", default-features = false }
+frame-system = { version = "38.0.0", default-features = false }
+frame-executive = { version = "38.0.0", default-features = false }
+frame-benchmarking = { version = "38.0.0", default-features = false }
 
 # Substrate Pallets
-pallet-balances = { version = "28.0.0", default-features = false }
-pallet-transaction-payment = { version = "28.0.0", default-features = false }
-pallet-timestamp = { version = "27.0.0", default-features = false }
-pallet-sudo = { version = "28.0.0", default-features = false }
-pallet-aura = { version = "27.0.0", default-features = false }
-pallet-grandpa = { version = "28.0.0", default-features = false }
+pallet-balances = { version = "39.0.0", default-features = false }
+pallet-transaction-payment = { version = "38.0.0", default-features = false }
+pallet-timestamp = { version = "37.0.0", default-features = false }
+pallet-sudo = { version = "38.0.0", default-features = false }
+pallet-aura = { version = "37.0.0", default-features = false }
+pallet-grandpa = { version = "38.0.0", default-features = false }
 
 # Substrate Primitives
-sp-core = { version = "28.0.0", default-features = false }
-sp-runtime = { version = "31.0.0", default-features = false }
+sp-core = { version = "34.0.0", default-features = false }
+sp-runtime = { version = "39.0.1", default-features = false }
 sp-std = { version = "14.0.0", default-features = false }
-sp-io = { version = "30.0.0", default-features = false }
-sp-api = { version = "26.0.0", default-features = false }
-sp-blockchain = { version = "28.0.0", default-features = false }
-sp-block-builder = { version = "26.0.0", default-features = false }
-sp-consensus-aura = { version = "0.32.0", default-features = false }
-sp-consensus-grandpa = { version = "13.0.0", default-features = false }
+sp-io = { version = "38.0.0", default-features = false }
+sp-api = { version = "34.0.0", default-features = false }
+sp-blockchain = { version = "37.0.1", default-features = false }
+sp-block-builder = { version = "34.0.0", default-features = false }
+sp-consensus-aura = { version = "0.40.0", default-features = false }
+sp-consensus-grandpa = { version = "21.0.0", default-features = false }
 
 [profile.release]
 panic = "unwind"
