@@ -2,9 +2,7 @@
   "name": "GLIN Incentivized Testnet",
   "id": "glin_testnet",
   "chainType": "Live",
-  "bootNodes": [
-    
-  ],
+  "bootNodes": [],
   "telemetryEndpoints": null,
   "protocolId": null,
   "properties": {
