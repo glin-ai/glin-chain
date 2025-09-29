@@ -55,9 +55,6 @@ USER glin
 # Expose P2P, RPC, WebSocket, and Prometheus ports
 EXPOSE 30333 9933 9944 9615
 
-# Volume for blockchain data
-VOLUME ["/data"]
-
 # Health check for monitoring
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
     CMD ["/usr/local/bin/glin-node", "--version"]
