@@ -48,9 +48,12 @@ COPY --from=builder /app/target/release/glin-node /usr/local/bin/glin-node
 # Create non-root user for security
 RUN useradd -m -u 1000 -U -s /bin/sh -d /glin glin && \
     mkdir -p /data /glin/.local/share && \
-    chown -R glin:glin /data /glin/.local/share /usr/local/bin/glin-node
+    chown -R glin:glin /glin/.local/share /usr/local/bin/glin-node && \
+    chmod -R 755 /data
 
-USER glin
+# Don't switch to glin user - run as root for Railway volumes
+# Railway volumes require root access initially
+USER root
 
 # Expose P2P, RPC, WebSocket, and Prometheus ports
 EXPOSE 30333 9933 9944 9615
