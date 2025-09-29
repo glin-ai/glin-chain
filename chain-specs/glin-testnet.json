@@ -3,7 +3,7 @@
   "id": "glin_testnet",
   "chainType": "Live",
   "bootNodes": [
-    "/ip4/127.0.0.1/tcp/30333/p2p/12D3KooWMX9URmDPLCEajxzT2k3UkSuBmydHF9zzcBk9NcKsUKop"
+    
   ],
   "telemetryEndpoints": null,
   "protocolId": null,

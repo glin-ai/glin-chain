@@ -73,6 +73,7 @@ pub fn incentivized_testnet_config() -> Result<ChainSpec, String> {
     .with_chain_type(ChainType::Live)
     .with_genesis_config_patch(incentivized_testnet_genesis())
     .with_properties(testnet_properties())
+    .with_boot_nodes(vec![])  // No default bootnodes
     .build())
 }
 
