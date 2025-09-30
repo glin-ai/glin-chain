@@ -5,6 +5,10 @@
 
 set -e
 
+# Configure logging to reduce verbosity
+export RUST_LOG="${RUST_LOG:-info,sc_consensus_slots=warn,aura=warn,grandpa=warn,sc_network=warn}"
+export RUST_BACKTRACE="${RUST_BACKTRACE:-0}"
+
 VALIDATOR_NUM=${1:-1}
 BASE_DIR=${BASE_DIR:-/data}
 CHAIN_SPEC=${CHAIN_SPEC:-glin_testnet}
@@ -80,5 +84,7 @@ exec ./target/release/glin-node \
     $BOOTNODES \
     --execution wasm \
     --wasm-execution compiled \
-    --state-pruning ${PRUNING:-1000} \
-    --blocks-pruning ${BLOCKS_PRUNING:-1000}
+    --state-pruning ${PRUNING:-256} \
+    --blocks-pruning ${BLOCKS_PRUNING:-256} \
+    --db-cache ${DB_CACHE:-512} \
+    --state-cache-size ${STATE_CACHE:-256}
