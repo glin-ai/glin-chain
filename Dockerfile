@@ -67,4 +67,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
 
 ENTRYPOINT ["/usr/local/bin/glin-node"]
 # Default command for testnet - Railway will override this
-CMD ["--chain", "/chain-specs/glin-testnet-raw.json", "--ws-external", "--rpc-external", "--rpc-cors", "all"]
+CMD ["--chain", "/chain-specs/glin-testnet-raw.json", "--rpc-external", "--rpc-cors", "all"]
