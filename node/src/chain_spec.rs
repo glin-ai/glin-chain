@@ -97,12 +97,34 @@ fn testnet_properties() -> serde_json::Map<String, Value> {
 fn development_genesis() -> Value {
     let initial_authorities = vec![authority_keys_from_seed("Alice")];
     let root_key = get_account_id_from_seed::<sr25519::Public>("Alice");
-    let endowed_accounts = vec![
+
+    let mut endowed_accounts = vec![
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         get_account_id_from_seed::<sr25519::Public>("Bob"),
         get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
         get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
     ];
+
+    // Add validator and special accounts from validator-keys directory
+    // These accounts have known seed phrases for development testing
+    let validator_and_special_accounts = vec![
+        // Faucet account
+        AccountId::from_ss58check("5FHNa6qqbh3rD4uUD3nkdiCvwJgn8dzT7ViTpyWrSAjPJNrr").expect("Valid faucet address"),
+        // Validator 1
+        AccountId::from_ss58check("5G9gFursQMBi1taQxi7BHLDY6rGcgNTtJxJZf1MM24UQuPch").expect("Valid validator 1 address"),
+        // Validator 2
+        AccountId::from_ss58check("5HHKhuA1RBZQi4e3GHCX2uHh5qop22ERk4B8eyx8qZaPAMoh").expect("Valid validator 2 address"),
+        // Validator 3
+        AccountId::from_ss58check("5HK1spmDFQm5kNwQW1iVieT9osdryiQHfDyddWn8ECdfyxD9").expect("Valid validator 3 address"),
+        // Treasury
+        AccountId::from_ss58check("5EvHDz1hSYKpp4xg5nr8ZnWDbiT1aMqAMUJb7f6PxzwEf7L5").expect("Valid treasury address"),
+        // Team Ops
+        AccountId::from_ss58check("5EfN47pArrgnHQMpHYenFBjFvHPnhoptzi2xLdX8y2aKyUHa").expect("Valid team ops address"),
+        // Ecosystem
+        AccountId::from_ss58check("5CJs5wCYsEy5ne1YGXWJoVgFrkfhRydG2neWUFnVEwZrXEyi").expect("Valid ecosystem address"),
+    ];
+
+    endowed_accounts.extend(validator_and_special_accounts);
 
     testnet_genesis(initial_authorities, root_key, endowed_accounts)
 }
@@ -113,7 +135,8 @@ fn local_testnet_genesis() -> Value {
         authority_keys_from_seed("Bob"),
     ];
     let root_key = get_account_id_from_seed::<sr25519::Public>("Alice");
-    let endowed_accounts = vec![
+
+    let mut endowed_accounts = vec![
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         get_account_id_from_seed::<sr25519::Public>("Bob"),
         get_account_id_from_seed::<sr25519::Public>("Charlie"),
@@ -127,6 +150,27 @@ fn local_testnet_genesis() -> Value {
         get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
         get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
     ];
+
+    // Add validator and special accounts from validator-keys directory
+    // These accounts have known seed phrases for development testing
+    let validator_and_special_accounts = vec![
+        // Faucet account
+        AccountId::from_ss58check("5FHNa6qqbh3rD4uUD3nkdiCvwJgn8dzT7ViTpyWrSAjPJNrr").expect("Valid faucet address"),
+        // Validator 1
+        AccountId::from_ss58check("5G9gFursQMBi1taQxi7BHLDY6rGcgNTtJxJZf1MM24UQuPch").expect("Valid validator 1 address"),
+        // Validator 2
+        AccountId::from_ss58check("5HHKhuA1RBZQi4e3GHCX2uHh5qop22ERk4B8eyx8qZaPAMoh").expect("Valid validator 2 address"),
+        // Validator 3
+        AccountId::from_ss58check("5HK1spmDFQm5kNwQW1iVieT9osdryiQHfDyddWn8ECdfyxD9").expect("Valid validator 3 address"),
+        // Treasury
+        AccountId::from_ss58check("5EvHDz1hSYKpp4xg5nr8ZnWDbiT1aMqAMUJb7f6PxzwEf7L5").expect("Valid treasury address"),
+        // Team Ops
+        AccountId::from_ss58check("5EfN47pArrgnHQMpHYenFBjFvHPnhoptzi2xLdX8y2aKyUHa").expect("Valid team ops address"),
+        // Ecosystem
+        AccountId::from_ss58check("5CJs5wCYsEy5ne1YGXWJoVgFrkfhRydG2neWUFnVEwZrXEyi").expect("Valid ecosystem address"),
+    ];
+
+    endowed_accounts.extend(validator_and_special_accounts);
 
     testnet_genesis(initial_authorities, root_key, endowed_accounts)
 }
