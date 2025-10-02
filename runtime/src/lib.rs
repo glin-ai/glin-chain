@@ -5,28 +5,46 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use pallet_grandpa::AuthorityId as GrandpaId;
-use sp_api::impl_runtime_apis;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::{
-    create_runtime_str, generic, impl_opaque_keys,
-    traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify},
-    transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, MultiSignature,
-};
-use sp_std::prelude::*;
-use sp_version::RuntimeVersion;
-
-// Frame imports
-use frame_support::{
-    construct_runtime, parameter_types, genesis_builder_helper,
-    traits::{ConstBool, ConstU32, ConstU64, ConstU8},
-    weights::{
-        constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
-        IdentityFee, Weight,
+use polkadot_sdk::{
+    pallet_grandpa::{self, AuthorityId as GrandpaId},
+    sp_api::{self, impl_runtime_apis},
+    sp_consensus_aura::{self, sr25519::AuthorityId as AuraId},
+    sp_consensus_grandpa::{self},
+    sp_core::{self, crypto::KeyTypeId, OpaqueMetadata},
+    sp_runtime::{
+        self, create_runtime_str, generic, impl_opaque_keys,
+        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify},
+        transaction_validity::{TransactionSource, TransactionValidity},
+        ApplyExtrinsicResult, MultiSignature,
     },
-    PalletId,
+    sp_std::{self, prelude::*},
+    sp_version::{self, RuntimeVersion},
+    sp_block_builder::{self},
+    sp_transaction_pool::{self},
+    sp_offchain::{self},
+    sp_session::{self},
+    sp_inherents::{self},
+    sp_genesis_builder::{self},
+    frame_support::{
+        self, construct_runtime, parameter_types, genesis_builder_helper,
+        traits::{ConstBool, ConstU32, ConstU64, ConstU8},
+        weights::{
+            constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
+            IdentityFee, Weight,
+        },
+        PalletId,
+    },
+    frame_system::{self},
+    frame_system_rpc_runtime_api::{self},
+    frame_executive::{self},
+    pallet_aura::{self},
+    pallet_balances::{self},
+    pallet_contracts::{self},
+    pallet_sudo::{self},
+    pallet_timestamp::{self},
+    pallet_transaction_payment::{self},
+    pallet_transaction_payment_rpc_runtime_api::{self},
+    pallet_insecure_randomness_collective_flip::{self},
 };
 
 // Import our custom pallets
@@ -65,7 +83,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
-    state_version: 1,
+    system_version: 1,
 };
 
 /// Native token symbol
@@ -144,6 +162,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = ();
 }
 
 impl pallet_aura::Config for Runtime {
@@ -191,6 +210,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ();
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
+    type DoneSlashHandler = ();
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -200,6 +220,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = IdentityFee<Balance>;
     type LengthToFee = IdentityFee<Balance>;
     type FeeMultiplierUpdate = ();
+    type WeightInfo = ();
 }
 
 impl pallet_sudo::Config for Runtime {

@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use codec::DecodeWithMemTracking;
 use frame_support::{
     dispatch::DispatchResult,
     pallet_prelude::*,
@@ -10,8 +11,8 @@ use frame_system::pallet_prelude::*;
 use scale_info::prelude::vec::Vec;
 use sp_std;
 use sp_runtime::{
-    traits::{AccountIdConversion, Saturating, Zero, Hash},
-    Permill, DispatchError,
+    traits::{AccountIdConversion, Saturating, Zero, Hash as HashT},
+    Permill,
 };
 
 pub use pallet::*;
@@ -53,7 +54,7 @@ pub mod pallet {
         type PlatformFeePercentage: Get<Permill>;
     }
 
-    #[derive(Encode, Decode, Clone, TypeInfo, PartialEq, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, TypeInfo, PartialEq, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct RewardBatch<T: Config> {
         pub task_id: T::Hash,
@@ -64,7 +65,7 @@ pub mod pallet {
         pub merkle_root: T::Hash, // For efficient verification
     }
 
-    #[derive(Encode, Decode, Clone, TypeInfo, PartialEq, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, TypeInfo, PartialEq, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct ProviderReward<T: Config> {
         pub provider: T::AccountId,
@@ -84,7 +85,7 @@ pub mod pallet {
         }
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct RewardMetrics {
         pub total_gradients: u64,
         pub avg_quality_score: u32,
@@ -175,6 +176,7 @@ pub mod pallet {
     }
 
     #[pallet::error]
+    #[derive(PartialEq)]
     pub enum Error<T> {
         /// Batch not found
         BatchNotFound,

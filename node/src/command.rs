@@ -3,8 +3,11 @@ use crate::{
     cli::{Cli, Subcommand},
     service,
 };
-use sc_cli::{ChainSpec, SubstrateCli};
-use sc_service::PartialComponents;
+use polkadot_sdk::{
+    sc_cli::{self, ChainSpec, SubstrateCli},
+    sc_service::{self, PartialComponents},
+    sc_consensus_grandpa::{self},
+};
 
 impl SubstrateCli for Cli {
     fn impl_name() -> String {

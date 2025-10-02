@@ -16,37 +16,22 @@ repository = "https://github.com/glin/glin-chain"
 version = "0.1.0"
 
 [workspace.dependencies]
-# Substrate dependencies
-codec = { package = "parity-scale-codec", version = "3.6.12", default-features = false, features = ["derive"] }
+# Core encoding/decoding (keep these separate as they're universal)
+codec = { package = "parity-scale-codec", version = "3.7.5", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info = { version = "2.11.1", default-features = false, features = ["derive"] }
 log = { version = "0.4.22", default-features = false }
 
-# Substrate FRAME
-frame-support = { version = "38.0.0", default-features = false }
-frame-system = { version = "38.0.0", default-features = false }
-frame-executive = { version = "38.0.0", default-features = false }
-frame-benchmarking = { version = "38.0.0", default-features = false }
+# Polkadot SDK umbrella - includes all pallets, FRAME, sc-* node components, sp-* primitives
+polkadot-sdk = { version = "2507.2.0", default-features = false }
 
-# Substrate Pallets
-pallet-balances = { version = "39.0.0", default-features = false }
-pallet-transaction-payment = { version = "38.0.0", default-features = false }
-pallet-timestamp = { version = "37.0.0", default-features = false }
-pallet-sudo = { version = "38.0.0", default-features = false }
-pallet-aura = { version = "37.0.0", default-features = false }
-pallet-grandpa = { version = "38.0.0", default-features = false }
-pallet-contracts = { version = "38.0.0", default-features = false }
-pallet-insecure-randomness-collective-flip = { version = "26.0.0", default-features = false }
-
-# Substrate Primitives
-sp-core = { version = "34.0.0", default-features = false }
-sp-runtime = { version = "39.0.1", default-features = false }
+# Individual FRAME crates for custom pallets (pulled from same version as polkadot-sdk uses)
+frame-support = { version = "42.0.0", default-features = false }
+frame-system = { version = "42.0.0", default-features = false }
+frame-benchmarking = { version = "42.0.0", default-features = false }
+sp-runtime = { version = "43.0.0", default-features = false }
 sp-std = { version = "14.0.0", default-features = false }
-sp-io = { version = "38.0.0", default-features = false }
-sp-api = { version = "34.0.0", default-features = false }
-sp-blockchain = { version = "37.0.1", default-features = false }
-sp-block-builder = { version = "34.0.0", default-features = false }
-sp-consensus-aura = { version = "0.40.0", default-features = false }
-sp-consensus-grandpa = { version = "21.0.0", default-features = false }
+sp-io = { version = "43.0.0", default-features = false }
+pallet-balances = { version = "43.0.1", default-features = false }
 
 [profile.release]
 panic = "unwind"
