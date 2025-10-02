@@ -18,9 +18,8 @@ sp-io = { workspace = true }
 pallet-balances = { workspace = true }
 
 [dev-dependencies]
-sp-core = { version = "34.0.0" }
-sp-runtime = { version = "39.0.1" }
-pallet-balances = { version = "39.0.0" }
+sp-core = { version = "38.1.0" }
+sp-io = { workspace = true, default-features = true }
 
 [features]
 default = ["std"]

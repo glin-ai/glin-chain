@@ -1,4 +1,7 @@
-use sc_cli::RunCmd;
+use polkadot_sdk::{
+    sc_cli::{self, RunCmd},
+    frame_benchmarking_cli::{self},
+};
 
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
@@ -46,5 +49,5 @@ pub enum Subcommand {
 
     /// Try some command against runtime state
     #[cfg(feature = "try-runtime")]
-    TryRuntime(try_runtime_cli::TryRuntimeCmd),
+    TryRuntime(sc_cli::TryRuntimeCmd),
 }

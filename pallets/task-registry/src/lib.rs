@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use codec::{Encode, DecodeWithMemTracking};
 use frame_support::{
     dispatch::DispatchResult,
     pallet_prelude::*,
@@ -8,7 +9,7 @@ use frame_support::{
 };
 use frame_system::pallet_prelude::*;
 use scale_info::prelude::vec::Vec;
-use sp_runtime::{traits::{AccountIdConversion, Hash}, DispatchError};
+use sp_runtime::traits::{AccountIdConversion, Hash as HashT};
 
 pub use pallet::*;
 
@@ -41,7 +42,7 @@ pub mod pallet {
         type PalletId: Get<PalletId>;
     }
 
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum TaskStatus {
         Pending,
         Recruiting,
@@ -52,7 +53,7 @@ pub mod pallet {
         Cancelled,
     }
 
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum ModelType {
         ResNet,
         Bert,
@@ -61,7 +62,7 @@ pub mod pallet {
         LoraFineTune,
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct Task<T: Config> {
         pub creator: T::AccountId,
@@ -77,7 +78,7 @@ pub mod pallet {
         pub hardware_requirements: HardwareRequirements,
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, Default, PartialEq, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, RuntimeDebug, TypeInfo, Default, PartialEq, MaxEncodedLen)]
     pub struct HardwareRequirements {
         pub min_vram_gb: u32,
         pub min_compute_capability: u32, // Stored as u32, divide by 10 for float
@@ -144,6 +145,7 @@ pub mod pallet {
     }
 
     #[pallet::error]
+    #[derive(PartialEq)]
     pub enum Error<T> {
         /// Task not found
         TaskNotFound,
@@ -200,7 +202,7 @@ pub mod pallet {
 
             // Generate task ID
             let task_count = TaskCount::<T>::get();
-            let task_id = T::Hashing::hash_of(&(creator.clone(), task_count));
+            let task_id = <T as frame_system::Config>::Hashing::hash_of(&(creator.clone(), task_count));
 
             // Create task
             let task = Task {

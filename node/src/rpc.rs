@@ -4,12 +4,17 @@ use std::sync::Arc;
 
 use glin_runtime::{opaque::Block, AccountId, Balance, Index};
 use jsonrpsee::RpcModule;
-use sc_transaction_pool_api::TransactionPool;
-use sp_api::ProvideRuntimeApi;
-use sp_block_builder::BlockBuilder;
-use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+use polkadot_sdk::{
+    sc_transaction_pool_api::{self, TransactionPool},
+    sp_api::{self, ProvideRuntimeApi},
+    sp_block_builder::{self, BlockBuilder},
+    sp_blockchain::{self, Error as BlockChainError, HeaderBackend, HeaderMetadata},
+    sc_rpc_api::{self},
+    substrate_frame_rpc_system::{self},
+    pallet_transaction_payment_rpc::{self},
+};
 
-pub use sc_rpc_api::DenyUnsafe;
+pub use polkadot_sdk::sc_rpc_api::DenyUnsafe;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {

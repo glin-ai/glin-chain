@@ -1,15 +1,29 @@
 //! Service and ServiceFactory implementation.
 
 use std::{sync::Arc, time::Duration};
-use sc_client_api::backend::Backend;
-use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
-use sc_consensus_grandpa::SharedVoterState;
-use sc_executor::{WasmExecutor, WasmExecutionMethod};
-use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
-use sc_client_api::BlockBackend;
-use sc_telemetry::{Telemetry, TelemetryWorker};
-use sc_transaction_pool_api::OffchainTransactionPoolFactory;
-use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
+use futures::FutureExt;
+use polkadot_sdk::{
+    sc_client_api::{self, backend::Backend, BlockBackend},
+    sc_consensus_aura::{self, ImportQueueParams, SlotProportion, StartAuraParams},
+    sc_consensus_grandpa::{self, SharedVoterState},
+    sc_executor::{self, WasmExecutor, WasmExecutionMethod},
+    sc_executor_wasmtime::{self},
+    sc_service::{self, error::Error as ServiceError, Configuration, TaskManager},
+    sc_telemetry::{self, Telemetry, TelemetryWorker},
+    sc_transaction_pool::{self},
+    sc_transaction_pool_api::{self, OffchainTransactionPoolFactory},
+    sc_consensus::{self},
+    sc_network::{self},
+    sc_offchain::{self},
+    sc_basic_authorship::{self},
+    sc_rpc_api::{self},
+    sp_consensus_aura::{self, sr25519::AuthorityPair as AuraPair},
+    sp_consensus::{self},
+    sp_io::{self},
+    sp_runtime::{self},
+    sp_consensus_grandpa::{self},
+    sp_timestamp::{self},
+};
 use glin_runtime::{self, opaque::Block, RuntimeApi};
 
 // Type aliases for convenience
@@ -17,6 +31,7 @@ type FullClient = sc_service::TFullClient<Block, RuntimeApi, WasmExecutor<sp_io:
 
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
+type TransactionPool = sc_transaction_pool::TransactionPoolHandle<Block, FullClient>;
 
 /// The minimum period of blocks on which justifications will be
 /// imported and generated.
@@ -30,7 +45,7 @@ pub fn new_partial(
         FullBackend,
         FullSelectChain,
         sc_consensus::DefaultImportQueue<Block>,
-        sc_transaction_pool::FullPool<Block, FullClient>,
+        TransactionPool,
         (
             sc_consensus_grandpa::GrandpaBlockImport<
                 FullBackend,
@@ -80,12 +95,15 @@ pub fn new_partial(
 
     let select_chain = sc_consensus::LongestChain::new(backend.clone());
 
-    let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-        config.transaction_pool.clone(),
-        config.role.is_authority().into(),
-        config.prometheus_registry(),
-        task_manager.spawn_essential_handle(),
-        client.clone(),
+    let transaction_pool = Arc::from(
+        sc_transaction_pool::Builder::new(
+            task_manager.spawn_essential_handle(),
+            client.clone(),
+            config.role.is_authority().into(),
+        )
+        .with_options(config.transaction_pool.clone())
+        .with_prometheus(config.prometheus_registry())
+        .build(),
     );
 
     let (grandpa_block_import, grandpa_link) = sc_consensus_grandpa::block_import(
@@ -135,7 +153,23 @@ pub fn new_partial(
 
 /// Build a new service for a full client.
 pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
-    let sc_service::PartialComponents {
+    let sc_service::PartialComponents::<
+        FullClient,
+        FullBackend,
+        FullSelectChain,
+        sc_consensus::DefaultImportQueue<Block>,
+        TransactionPool,
+        (
+            sc_consensus_grandpa::GrandpaBlockImport<
+                FullBackend,
+                Block,
+                FullClient,
+                FullSelectChain,
+            >,
+            sc_consensus_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
+            Option<Telemetry>,
+        ),
+    > {
         client,
         backend,
         mut task_manager,
@@ -157,7 +191,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
     // Create the GRANDPA protocol name
     let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
         &client
-            .block_hash(0u32)?
+            .block_hash(0u32.into())?
             .expect("Genesis block exists; qed"),
         &config.chain_spec,
     );
@@ -189,7 +223,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
         Vec::default(),
     ));
 
-    let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
+    let (network, system_rpc_tx, tx_handler_controller, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
             net_config,
@@ -204,22 +238,23 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
         })?;
 
     if config.offchain_worker.enabled {
+        let offchain_workers = sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+            runtime_api_provider: client.clone(),
+            is_validator: config.role.is_authority(),
+            keystore: Some(keystore_container.keystore()),
+            offchain_db: backend.offchain_storage(),
+            transaction_pool: Some(OffchainTransactionPoolFactory::new(
+                transaction_pool.clone(),
+            )),
+            network_provider: Arc::new(network.clone()) as Arc<dyn sc_offchain::NetworkProvider + Send + Sync>,
+            enable_http_requests: true,
+            custom_extensions: |_| vec![],
+        })?;
+
         task_manager.spawn_handle().spawn(
             "offchain-workers-runner",
             "offchain-worker",
-            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
-                runtime_api_provider: client.clone(),
-                is_validator: config.role.is_authority(),
-                keystore: Some(keystore_container.keystore()),
-                offchain_db: backend.offchain_storage(),
-                transaction_pool: Some(OffchainTransactionPoolFactory::new(
-                    transaction_pool.clone(),
-                )),
-                network_provider: Arc::new(network.clone()) as Arc<dyn sc_offchain::NetworkProvider + Send + Sync>,
-                enable_http_requests: true,
-                custom_extensions: |_| vec![],
-            })
-            .run(client.clone(), task_manager.spawn_handle()),
+            offchain_workers.run(client.clone(), task_manager.spawn_handle()).boxed(),
         );
     }
 
@@ -358,6 +393,6 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
         );
     }
 
-    network_starter.start_network();
+    // Network starts automatically in newer polkadot-sdk versions
     Ok(task_manager)
 }

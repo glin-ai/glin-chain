@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use codec::DecodeWithMemTracking;
 use frame_support::{
     dispatch::DispatchResult,
     pallet_prelude::*,
@@ -9,7 +10,7 @@ use frame_support::{
 use frame_system::pallet_prelude::*;
 use sp_runtime::{
     traits::{Saturating, Zero},
-    Percent, DispatchError,
+    Percent,
 };
 
 pub use pallet::*;
@@ -47,7 +48,7 @@ pub mod pallet {
         type UnstakingPeriod: Get<BlockNumberFor<Self>>;
     }
 
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum ProviderStatus {
         Active,
         Idle,
@@ -57,14 +58,14 @@ pub mod pallet {
         Unbonding,
     }
 
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum GpuTier {
         Consumer,  // RTX 3070, 3080, etc.
         Prosumer,  // RTX 4080, 4090
         Professional, // A100, H100
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct Provider<T: Config> {
         pub stake: BalanceOf<T>,
@@ -79,7 +80,7 @@ pub mod pallet {
         pub unbonding_at: Option<BlockNumberFor<T>>,
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, Default, PartialEq, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, RuntimeDebug, TypeInfo, Default, PartialEq, MaxEncodedLen)]
     pub struct HardwareInfo {
         pub gpu_model: BoundedVec<u8, ConstU32<100>>,
         pub gpu_tier: GpuTier,
@@ -96,7 +97,7 @@ pub mod pallet {
         }
     }
 
-    #[derive(Encode, Decode, Clone, RuntimeDebug, TypeInfo, PartialEq, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, RuntimeDebug, TypeInfo, PartialEq, MaxEncodedLen)]
     pub enum SlashReason {
         MaliciousGradient,
         FalseHardwareClaim,
@@ -175,6 +176,7 @@ pub mod pallet {
     }
 
     #[pallet::error]
+    #[derive(PartialEq)]
     pub enum Error<T> {
         /// Provider not found
         ProviderNotFound,

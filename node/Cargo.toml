@@ -14,6 +14,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 name = "glin-node"
 
 [dependencies]
+# CLI and utilities
 clap = { version = "4.4", features = ["derive"] }
 futures = { version = "0.3", features = ["thread-pool"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -21,54 +22,54 @@ serde_json = "1.0"
 jsonrpsee = { version = "0.24", features = ["server"] }
 hex = "0.4"
 
-# Substrate client
-sc-cli = { version = "0.47.0" }
-sc-executor = { version = "0.40.1" }
-sc-executor-wasmtime = { version = "0.35.0" }
-sc-network = { version = "0.45.6" }
-sc-service = { version = "0.46.0" }
-sc-telemetry = { version = "25.0.0" }
-sc-transaction-pool = { version = "37.0.0" }
-sc-transaction-pool-api = { version = "37.0.0" }
-sc-consensus = { version = "0.44.0" }
-sc-consensus-aura = { version = "0.45.0" }
-sc-consensus-grandpa = { version = "0.30.0" }
-sc-client-api = { version = "37.0.0" }
-sc-rpc = { version = "40.0.0" }
-sc-rpc-api = { version = "0.44.0" }
-sc-basic-authorship = { version = "0.45.0" }
-sc-offchain = { version = "40.0.0" }
-sc-network-sync = { version = "0.44.1" }
+# Polkadot SDK - includes all substrate client (sc-*) and primitives (sp-*)
+polkadot-sdk = { workspace = true, features = [
+    # Substrate client components
+    "sc-cli",
+    "sc-executor",
+    "sc-executor-wasmtime",
+    "sc-service",
+    "sc-network",
+    "sc-transaction-pool",
+    "sc-transaction-pool-api",
+    "sc-consensus",
+    "sc-consensus-aura",
+    "sc-consensus-grandpa",
+    "sc-client-api",
+    "sc-rpc",
+    "sc-rpc-api",
+    "sc-basic-authorship",
+    "sc-offchain",
+    "sc-network-sync",
+    "sc-telemetry",
+    # Substrate primitives
+    "sp-core",
+    "sp-runtime",
+    "sp-timestamp",
+    "sp-inherents",
+    "sp-keyring",
+    "sp-api",
+    "sp-blockchain",
+    "sp-block-builder",
+    "sp-consensus-aura",
+    "sp-consensus-grandpa",
+    "sp-consensus",
+    "sp-io",
+    # Frame components
+    "frame-system",
+    "frame-benchmarking",
+    "frame-benchmarking-cli",
+    "pallet-transaction-payment",
+    "pallet-transaction-payment-rpc",
+    # RPC
+    "substrate-frame-rpc-system",
+] }
 
-# Substrate primitives
-sp-core = { version = "34.0.0" }
-sp-runtime = { version = "39.0.1" }
-sp-timestamp = { version = "34.0.0" }
-sp-inherents = { version = "34.0.0" }
-sp-keyring = { version = "39.0.0" }
-sp-api = { version = "34.0.0" }
-sp-blockchain = { version = "37.0.1" }
-sp-block-builder = { version = "34.0.0" }
-sp-consensus-aura = { version = "0.40.0" }
-sp-consensus-grandpa = { version = "21.0.0" }
-sp-consensus = { version = "0.40.0" }
-sp-io = { version = "38.0.0" }
-
-# Frame
-frame-system = { version = "38.0.0" }
-frame-benchmarking = { version = "38.0.0" }
-frame-benchmarking-cli = { version = "43.0.0" }
-pallet-transaction-payment = { version = "38.0.0" }
-pallet-transaction-payment-rpc = { version = "41.0.0" }
-
-# Runtime
+# Local runtime
 glin-runtime = { path = "../runtime" }
 
-# These dependencies are used for RPC
-substrate-frame-rpc-system = { version = "39.0.0" }
-
-# CLI-specific dependencies
-try-runtime-cli = { version = "0.42.0", optional = true }
+# CLI-specific dependencies (try-runtime feature)
+# Note: try-runtime-cli is included in polkadot-sdk, enable with feature flag
 
 [build-dependencies]
 substrate-build-script-utils = { version = "11.0.0" }
@@ -77,11 +78,9 @@ substrate-build-script-utils = { version = "11.0.0" }
 default = []
 runtime-benchmarks = [
     "glin-runtime/runtime-benchmarks",
-    "frame-benchmarking/runtime-benchmarks",
-    "frame-benchmarking-cli/runtime-benchmarks",
-    "sc-service/runtime-benchmarks",
+    "polkadot-sdk/runtime-benchmarks",
 ]
 try-runtime = [
     "glin-runtime/try-runtime",
-    "try-runtime-cli/try-runtime",
+    "polkadot-sdk/try-runtime",
 ]
