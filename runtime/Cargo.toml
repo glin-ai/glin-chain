@@ -25,6 +25,8 @@ pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { version = "38.0.0", default-features = false }
+pallet-contracts = { workspace = true }
+pallet-insecure-randomness-collective-flip = { workspace = true }
 
 # Substrate Primitives
 frame-system-rpc-runtime-api = { version = "34.0.0", default-features = false }
@@ -72,6 +74,8 @@ std = [
     "pallet-timestamp/std",
     "pallet-transaction-payment/std",
     "pallet-transaction-payment-rpc-runtime-api/std",
+    "pallet-contracts/std",
+    "pallet-insecure-randomness-collective-flip/std",
     "frame-system-rpc-runtime-api/std",
     "pallet-task-registry/std",
     "pallet-provider-staking/std",
@@ -116,6 +120,7 @@ try-runtime = [
     "pallet-sudo/try-runtime",
     "pallet-timestamp/try-runtime",
     "pallet-transaction-payment/try-runtime",
+    "pallet-contracts/try-runtime",
     "pallet-task-registry/try-runtime",
     "pallet-provider-staking/try-runtime",
     "pallet-reward-distribution/try-runtime",

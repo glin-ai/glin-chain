@@ -34,6 +34,8 @@ pallet-timestamp = { version = "37.0.0", default-features = false }
 pallet-sudo = { version = "38.0.0", default-features = false }
 pallet-aura = { version = "37.0.0", default-features = false }
 pallet-grandpa = { version = "38.0.0", default-features = false }
+pallet-contracts = { version = "38.0.0", default-features = false }
+pallet-insecure-randomness-collective-flip = { version = "26.0.0", default-features = false }
 
 # Substrate Primitives
 sp-core = { version = "34.0.0", default-features = false }
